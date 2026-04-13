@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,5 +38,9 @@ public class MealService {
         return meals.stream()
                 .map(MealResponse::from)
                 .toList();
+    }
+
+    public Integer getTotalKcalToday(Long userId) {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
     }
 }

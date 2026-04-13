@@ -1,7 +1,10 @@
 package com.example.demo.meal;
 
+import com.example.demo.common.BaseTimeEntity;
 import com.example.demo.user.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 
 @Entity
@@ -10,7 +13,7 @@ import lombok.*;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Meal {
+public class Meal extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
