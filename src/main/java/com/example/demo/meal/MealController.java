@@ -27,4 +27,11 @@ public class MealController {
         List<MealResponse> responses = mealService.getMeals(userId);
         return ResponseEntity.ok(responses);
     }
+
+    @GetMapping("/users/{userId}/meals/today/total-kcal")
+    public ResponseEntity<Integer> getTotalKcal(@PathVariable Long userId) {
+        // 1. 서비스 호출해서 합계 가져오기 //합계를 가져오기에 Integer 반환
+        Integer totalKcal = mealService.getTotalKcalToday(userId);
+        return ResponseEntity.ok(totalKcal);
+    }
 }

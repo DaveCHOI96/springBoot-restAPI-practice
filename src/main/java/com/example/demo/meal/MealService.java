@@ -41,6 +41,15 @@ public class MealService {
     }
 
     public Integer getTotalKcalToday(Long userId) {
+        // 1. "오늘"의 시작 시간을 정의
         LocalDateTime start = LocalDate.now().atStartOfDay();
+        // 2. "현재" 시간을 종료 시점으로 정의
+        LocalDateTime end = LocalDateTime.now();
+
+        List<Meal> meals = mealRepository.findByUserIdAndCreatedAtBetween(userId, start, end);
+
+        //mapToInt를 사용해야 sum() 처리가 빠르다.
+        return meals.stream()
+                .mapToInt(Meal::getCalories).sum();
     }
 }
