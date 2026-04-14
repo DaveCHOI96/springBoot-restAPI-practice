@@ -25,4 +25,9 @@ public class Meal extends BaseTimeEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id") //DB 외래키(FK) 이름
     private User user;
+
+    public void update(String foodName, Integer calories) {
+        this.foodName = foodName;
+        this.calories = calories;
+    }
 }

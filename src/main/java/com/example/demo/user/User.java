@@ -2,6 +2,7 @@ package com.example.demo.user;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.ColumnDefault;
 
 @Entity
 @Table(name = "users")
@@ -28,6 +29,9 @@ public class User {
 
     @Column(nullable = false, unique = true, length = 50)
     private String phoneNumber;
+
+    @ColumnDefault("2000")
+    private Integer targetKcal;
 
 
 
