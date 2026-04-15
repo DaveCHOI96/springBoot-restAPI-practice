@@ -65,6 +65,14 @@ public class MealController {
         return ResponseEntity.ok(mealService.getMealByDate(userId, date, pageable));
     }
 
+    @GetMapping("/api/meals/{myId}/feed")
+    public ResponseEntity<Page<MealResponse>> getFollowMeal(
+            @PathVariable Long myId,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+                Page<MealResponse> responses = mealService.getFollowerMeal(myId, pageable);
+                return ResponseEntity.ok(responses);
+    }
+
     @PutMapping("/users/{userId}/meals/{mealId}")
     public ResponseEntity<MealResponse> updateMeal(
             //@PathVariable이 꼭 붙어야 주소창에서 ID를 읽어옴

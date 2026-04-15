@@ -1,5 +1,7 @@
 package com.example.demo.meal;
 
+import com.example.demo.user.Follow;
+import com.example.demo.user.FollowRepository;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class MealService {
 
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
+    private final FollowRepository followRepository;
 
     public MealResponse saveMeal(Long userId, MealRequest request) {
         User user = userRepository.findById(userId)
@@ -132,6 +135,26 @@ public class MealService {
 
         // 날짜 범위로 찾되, 페이징 규칙(Pageable)을 적용
         return mealRepository.findByUserIdAndCreatedAtBetween(userId, start, end, pageable)
+                .map(MealResponse::from);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MealResponse> getFollowerMeal(Long myId, Pageable pageable) {
+        // 1. 내가 팔로우하는 사람들의 목록을 가져옴
+        List<Follow> followings = followRepository.findByFollowerId(myId);
+
+        // 2. 그 리스트에서 '상대방(following)의 ID'만 추출
+        List<Long> followingIds = followings.stream()
+                .map(follow -> follow.getFollowing().getId())
+                .toList();
+
+        // 3. 만약 팔로우하는 사람이 아무도 없다면? 굳이 DB를 더 뒤질 필요 없이 빈 페이지 반환!
+        if (followingIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        // 4. 추출한 ID 목록에 포함된(IN) 유저들의 식단만 페이징해서 가져오기
+        return mealRepository.findByUserIdIn(followingIds, pageable)
                 .map(MealResponse::from);
     }
 }
