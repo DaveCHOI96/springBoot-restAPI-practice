@@ -1,10 +1,16 @@
 package com.example.demo.meal;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -48,6 +54,15 @@ public class MealController {
     public ResponseEntity<DailyProgressResponse> getKcalPercent(@PathVariable Long userId) {
         DailyProgressResponse response = mealService.getDailyProgress(userId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/users/{userId}/meals/day")
+    public ResponseEntity<Page<MealResponse>> getPageMeal(
+            @PathVariable Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @PageableDefault(size = 10, sort = "id", direction = Sort.Direction.DESC) Pageable pageable) {
+
+        return ResponseEntity.ok(mealService.getMealByDate(userId, date, pageable));
     }
 
     @PutMapping("/users/{userId}/meals/{mealId}")

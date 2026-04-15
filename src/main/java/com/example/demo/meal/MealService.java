@@ -3,11 +3,14 @@ package com.example.demo.meal;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -112,5 +115,23 @@ public class MealService {
         }
 
         mealRepository.delete(meal);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<MealResponse> getMealByDate(Long userId, LocalDate date, Pageable pageable) {
+        userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        // 미래 날짜인지 체크
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("현재 또는 과거 기록만 조회가능 합니다.");
+        }
+
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.atTime(LocalTime.MAX);
+
+        // 날짜 범위로 찾되, 페이징 규칙(Pageable)을 적용
+        return mealRepository.findByUserIdAndCreatedAtBetween(userId, start, end, pageable)
+                .map(MealResponse::from);
     }
 }
