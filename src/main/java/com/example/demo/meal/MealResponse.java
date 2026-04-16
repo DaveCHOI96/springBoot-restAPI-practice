@@ -11,6 +11,6 @@ public record MealResponse(
 ) {
     public static MealResponse from(Meal meal) {
         return new MealResponse(meal.getId(), meal.getFoodName(),
-                meal.getCalories(), meal.getCreatedAt(), meal.getModfiedAt());
+                meal.getCalories(), meal.getCreatedAt(), meal.getModifiedAt());
     }
 }

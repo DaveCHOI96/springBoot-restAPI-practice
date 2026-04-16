@@ -1,14 +1,24 @@
 package com.example.demo.user;
 
+import com.example.demo.meal.Meal;
+import com.example.demo.water.Water;
+import com.example.demo.workout.Workout;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.annotations.Where;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@SQLRestriction("is_deleted = false") // 모든 SELECT 쿼리에 이 SQL 조건이 강제로 붙습니다.
 @Builder
 public class User {
 
@@ -33,6 +43,25 @@ public class User {
     @ColumnDefault("2000")
     private Integer targetKcal;
 
+    private boolean isDeleted = false;
+
+    private LocalDateTime deletedAt;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Workout> workouts = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Meal> meals = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    public List<Water> waters = new ArrayList<>();
+
+    @OneToMany(mappedBy = "following", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    public List<Follow> followers = new ArrayList<>();
+
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    public List<Follow> followings = new ArrayList<>();
+
 
 
     //@NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -56,5 +85,21 @@ public class User {
         this.name = name;
         this.age = age;
         this.phoneNumber = phoneNumber;
+    }
+
+    public void softDelete() {
+        if (this.isDeleted) {
+            throw new IllegalArgumentException("이미 삭제된 사용자 입니다.");
+        }
+        this.isDeleted = true;
+        this.deletedAt = LocalDateTime.now();
+    }
+
+    public void restore() {
+        if (!this.isDeleted) {
+            throw new IllegalArgumentException("삭제되지 않은 사용자는 복구할 수 없습니다.");
+        }
+        this.isDeleted = false;
+        this.deletedAt = null;
     }
 }

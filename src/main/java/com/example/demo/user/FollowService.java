@@ -31,6 +31,11 @@ public class FollowService {
                 .following(following)
                 .build();
 
+        // 편의 메서드를 통해 양방향 관계 설정
+        // 이 과정에서 Follow 객체에 User가 세팅되고, User의 List에도 Follow가 추가됩니다.
+        follow.setFollower(follower);
+        follow.setFollowing(following);
+
         Follow savedFollow = followRepository.save(follow);
         return FollowResponse.from(savedFollow);
     }

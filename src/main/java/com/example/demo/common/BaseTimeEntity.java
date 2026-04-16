@@ -20,5 +20,5 @@ public class BaseTimeEntity {
     private LocalDateTime createdAt;
 
     @LastModifiedDate // 데이터가 수정될 때 시간이 자동 업데이트
-    private LocalDateTime modfiedAt;
+    private LocalDateTime modifiedAt;
 }
