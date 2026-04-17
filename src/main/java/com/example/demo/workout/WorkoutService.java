@@ -28,6 +28,10 @@ public class WorkoutService {
                 .user(user)
                 .build();
 
+        // 연관 관계 편의 메서드 사용
+        // workout -> user 설정과 user -> workout 리스트 추가가 동시에 완료
+        workout.confirmUser(user);
+
         //void가 아닌 WorkoutResponse를 사용할 경우 return 반환이 필요하기에
         // workoutRepository.save(workout); DB에 workout 엔티티를 영구저장
         Workout savadWorkout = workoutRepository.save(workout);

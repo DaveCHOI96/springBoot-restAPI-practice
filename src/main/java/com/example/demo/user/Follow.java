@@ -1,7 +1,9 @@
 package com.example.demo.user;
 
+import com.example.demo.common.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Filter;
 
 @Entity
 // 팔로우 버튼 연타로, DB 데이터가 2개가 쌓이는 경우 막기
@@ -14,8 +16,9 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
+@Filter(name = "deletedFilter", condition = "is_deleted = false")
 @Builder
-public class Follow {
+public class Follow extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,13 +33,12 @@ public class Follow {
     private User following;
 
     // 연관 관계 편의 메서드
-    public void setFollower(User follower) {
+    public void addRelation(User follower, User following) {
         this.follower = follower;
-        follower.getFollowings().add(this); // User 엔티티의 팔로잉 리스트에 추가
-    }
-
-    public void setFollowing(User following) {
         this.following = following;
-        following.getFollowers().add(this); // User 엔티티의 팔로워 리스트에 추가
+
+        // 유저 객체의 리스트에도 '나(this)'를 추가해서 동기화
+        follower.getFollowings().add(this);
+        following.getFollowers().add(this);
     }
 }

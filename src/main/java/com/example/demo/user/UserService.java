@@ -1,6 +1,8 @@
 package com.example.demo.user;
 
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +14,7 @@ import java.util.Optional;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     public UserResponse saveUser(UserRequest request) {
         // [1단계: 창고에 물어보기] "이 이메일 가진 사람 있어?"
@@ -38,6 +41,10 @@ public class UserService {
         User user = userRepository.findById(id)
                 //박스를 까는 도구(orElseThrow) 없이는 알맹이 변수(User user)에 데이터를 넣는 것 자체가 불가능
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저 입니다."));
+
+//        if (user.isDeleted()) {
+//            throw new IllegalArgumentException("삭제된 유저입니다.");
+//        }
         return UserResponse.from(user);
     }
 
@@ -55,13 +62,18 @@ public class UserService {
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
-        user.softDelete();
+        user.softDeletes();
     }
 
     public UserRestoreResponse restoreUser(Long id) {
-        User user = userRepository.findByIdIncludingDeleted(id)
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
-        user.restore();
-    }
+        // 하이버네이트 세션을 꺼내서 필터를 잠시 끕니다.
+        Session session = entityManager.unwrap(Session.class);
+        session.disableFilter("deletedFilter");
 
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
+        user.restores();
+
+        return UserRestoreResponse.from(user);
+    }
 }

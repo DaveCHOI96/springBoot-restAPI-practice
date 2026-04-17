@@ -33,6 +33,8 @@ public class MealService {
                 .user(user) // 유저 정보 연결
                 .build();
 
+        meal.confirmUser(user);
+
         Meal savedMeal = mealRepository.save(meal);
         return MealResponse.from(savedMeal);
     }
@@ -116,7 +118,6 @@ public class MealService {
         if (!meal.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
         }
-
         mealRepository.delete(meal);
     }
 

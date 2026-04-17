@@ -1,13 +1,14 @@
 package com.example.demo.user;
 
+import com.example.demo.common.BaseEntity;
 import com.example.demo.meal.Meal;
 import com.example.demo.water.Water;
 import com.example.demo.workout.Workout;
 import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Table;
 import lombok.*;
-import org.hibernate.annotations.ColumnDefault;
-import org.hibernate.annotations.SQLRestriction;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,9 +19,9 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@SQLRestriction("is_deleted = false") // 모든 SELECT 쿼리에 이 SQL 조건이 강제로 붙습니다.
+@Filter(name = "deletedFilter", condition = "is_deleted = false")
 @Builder
-public class User {
+public class User extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,23 +44,19 @@ public class User {
     @ColumnDefault("2000")
     private Integer targetKcal;
 
-    private boolean isDeleted = false;
-
-    private LocalDateTime deletedAt;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Workout> workouts = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Meal> meals = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     public List<Water> waters = new ArrayList<>();
 
-    @OneToMany(mappedBy = "following", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "following", cascade = CascadeType.ALL)
     public List<Follow> followers = new ArrayList<>();
 
-    @OneToMany(mappedBy = "follower", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    @OneToMany(mappedBy = "follower", cascade = CascadeType.ALL)
     public List<Follow> followings = new ArrayList<>();
 
 
@@ -87,19 +84,27 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public void softDelete() {
-        if (this.isDeleted) {
-            throw new IllegalArgumentException("이미 삭제된 사용자 입니다.");
-        }
-        this.isDeleted = true;
-        this.deletedAt = LocalDateTime.now();
+    public void softDeletes() {
+        // 1. 본인(User) 삭제 상태 변경 (BaseEntity의 메서드 활용)
+        super.softDelete();
+
+        // 2. 자식들 연쇄 softDelete
+        this.workouts.forEach(Workout::softDelete);
+        this.meals.forEach(Meal::softDelete);
+        this.followers.forEach(Follow::softDelete);
+        this.followings.forEach(Follow::softDelete);
+
     }
 
-    public void restore() {
-        if (!this.isDeleted) {
-            throw new IllegalArgumentException("삭제되지 않은 사용자는 복구할 수 없습니다.");
-        }
-        this.isDeleted = false;
-        this.deletedAt = null;
+    public void restores() {
+        super.restore();
+
+        this.workouts.forEach(Workout::restore);
+        this.meals.forEach(Meal::restore);
+        this.followers.forEach(Follow::restore);
+        this.followings.forEach(Follow::restore);
     }
 }
+
+
+
