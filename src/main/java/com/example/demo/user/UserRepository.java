@@ -12,6 +12,8 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    // [중요] Jpa 기본 메서드는 Filter를 무시하고 읽어들임, 즉 Filter 사용할려면 쿼리 메서드를 따로 만들어야함
+
     boolean existsByEmail(String email);
 
     @Query("select u from User u where u.id = :id")

@@ -17,7 +17,7 @@ public class WorkoutService {
     private final UserRepository userRepository;
 
     public WorkoutResponse savaWorkout(Long userId, WorkoutRequest request) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
         // 객체 생성 조립 설명서 builder ~ build
         Workout workout = Workout.builder()

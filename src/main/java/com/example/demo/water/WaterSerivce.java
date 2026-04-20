@@ -17,7 +17,7 @@ public class WaterSerivce {
     private final UserRepository userRepository;
 
     public WaterResponse saveWater(Long userId, WaterRequest request) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다 " + userId));
         Water water = Water.builder()
                 .amount(request.amount())

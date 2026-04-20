@@ -6,7 +6,6 @@ import org.hibernate.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor // repository 연결을 자동으로 해줌
@@ -38,7 +37,7 @@ public class UserService {
 
     @Transactional(readOnly = true)
     public UserResponse getUser(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findActiveUserById(id)
                 //박스를 까는 도구(orElseThrow) 없이는 알맹이 변수(User user)에 데이터를 넣는 것 자체가 불가능
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저 입니다."));
 
@@ -52,7 +51,7 @@ public class UserService {
     // 스프링이 "어? user 객체 값이 바뀌었네?" 하고 알아채서 자동으로 DB에
     // UPDATE 쿼리를 날려줍니다. (우리가 save를 또 호출할 필요가 없어요!)
     public UserResponse updateUser(Long id, UserRequest request) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findActiveUserById(id)
                 .orElseThrow(() -> new IllegalArgumentException("수정할 유저가 없습니다"));
 
         user.update(request.name(), request.age(), request.phoneNumber());
@@ -60,7 +59,7 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
+        User user = userRepository.findActiveUserById(id)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
         user.softDeletes();
     }

@@ -17,9 +17,9 @@ public class FollowService {
             throw new IllegalArgumentException("자기 자신을 팔로우 할 수 없습니다.");
         }
 
-        User follower = userRepository.findById(followerId)
+        User follower = userRepository.findActiveUserById(followerId)
                 .orElseThrow(() -> new IllegalArgumentException("팔로워가 존재하지 않습니다."));
-        User following = userRepository.findById(followingId)
+        User following = userRepository.findActiveUserById(followingId)
                 .orElseThrow(() -> new IllegalArgumentException("팔로윙 대상이 존재하지 않습니다."));
 
         if (followRepository.existsByFollowerAndFollowing(follower, following)) {
@@ -39,9 +39,9 @@ public class FollowService {
     }
 
     public UnfollowResponse unfollow(Long followerId, Long followingId) {
-        User follower = userRepository.findById(followerId)
+        User follower = userRepository.findActiveUserById(followerId)
                 .orElseThrow(() -> new IllegalArgumentException("팔로워가 존재하지 않습니다."));
-        User following = userRepository.findById(followingId)
+        User following = userRepository.findActiveUserById(followingId)
                 .orElseThrow(() -> new IllegalArgumentException("팔로잉 대상이 존재하지 않습니다."));
 
         Follow follow = followRepository.findByFollowerAndFollowing(follower, following)

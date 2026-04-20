@@ -25,7 +25,7 @@ public class MealService {
     private final FollowRepository followRepository;
 
     public MealResponse saveMeal(Long userId, MealRequest request) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
         Meal meal = Meal.builder()
                 .foodName(request.foodName())
@@ -40,7 +40,7 @@ public class MealService {
     }
 
     public List<MealResponse> registerAll(Long userId, List<MealRequest> requests) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다 "));
         List<Meal> meals = requests.stream()
                 .map(request -> Meal.builder()
@@ -77,7 +77,7 @@ public class MealService {
     }
 
     public DailyProgressResponse getDailyProgress(Long userId) {
-        User user = userRepository.findById(userId)
+        User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
 
         // 오늘 먹은 총 칼로리 불러오기
@@ -98,7 +98,7 @@ public class MealService {
 
     public MealResponse updateMeal(Long userId, Long mealId, MealRequest request) {
         // 1. 수정할 식사 기록을 찾습니다.
-        Meal meal = mealRepository.findById(mealId)
+        Meal meal = mealRepository.findActiveMealById(mealId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 식사 기록을 찾을 수 없습니다."));
         // 2. [중요] 이 기록이 요청한 유저의 것이 맞는지 확인합니다. (권한 체크)
         if (!meal.getUser().getId().equals(userId)) {
@@ -113,7 +113,7 @@ public class MealService {
     }
 
     public void deleteMeal(Long userId, Long mealId) {
-        Meal meal = mealRepository.findById(mealId)
+        Meal meal = mealRepository.findActiveMealById(mealId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 음식이 존재하지않습니다."));
         if (!meal.getUser().getId().equals(userId)) {
             throw new IllegalArgumentException("삭제 권한이 없습니다.");
@@ -123,7 +123,7 @@ public class MealService {
 
     @Transactional(readOnly = true)
     public Page<MealResponse> getMealByDate(Long userId, LocalDate date, Pageable pageable) {
-        userRepository.findById(userId)
+        userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         // 미래 날짜인지 체크
