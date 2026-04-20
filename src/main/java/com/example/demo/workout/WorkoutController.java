@@ -1,9 +1,9 @@
 package com.example.demo.workout;
 
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +18,7 @@ public class WorkoutController {
 
     @PostMapping("/users/{userId}/workouts")
     public ResponseEntity<WorkoutResponse> addWorkout(
-            @PathVariable Long userId, @RequestBody WorkoutRequest request) {
+            @PathVariable Long userId, @Valid @RequestBody WorkoutRequest request) {
         WorkoutResponse response = workoutService.savaWorkout(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -29,5 +29,13 @@ public class WorkoutController {
         //workoutService에 userId에 대한 getWorkouts 메서드를 실행시켜, 나온 정보를 response에 담아
         List<WorkoutResponse> responses = workoutService.getWorkouts(userId);
         return ResponseEntity.ok(responses);
+    }
+
+    @PutMapping("/users/{userId}/workouts/{workoutId}")
+    public ResponseEntity<WorkoutResponse> updateWorkout(
+            @PathVariable Long userId, @PathVariable Long workoutId,
+            @RequestBody WorkoutRequest request) {
+        WorkoutResponse response = workoutService.updateWorkout(userId, workoutId, request);
+        return ResponseEntity.ok(response);
     }
 }

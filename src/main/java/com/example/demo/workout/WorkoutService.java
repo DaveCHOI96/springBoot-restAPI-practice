@@ -52,4 +52,15 @@ public class WorkoutService {
                 //포장이 끝난 영수증들을 다시 차곡차곡 모아서 **새로운 리스트(바구니)**에 담습니다.
                 .toList();
     }
+
+    public WorkoutResponse updateWorkout(Long userId, Long workoutId, WorkoutRequest request) {
+        Workout workout = workoutRepository.findActiveWorkoutById(workoutId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 운동 기록이 존재하지 않습니다."));
+
+        if (!workout.getUser().getId().equals(userId)) {
+            throw new IllegalArgumentException("해당 운동기록을 수정할 수 있는 권한이 없습니다.");
+        }
+        workout.update(request.title(), request.duration());
+        return WorkoutResponse.from(workout);
+    }
 }

@@ -28,6 +28,12 @@ public class Workout extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
+
+    public void update(String title,Integer duration) {
+        this.title = title;
+        this.duration = duration;
+    }
+
     // 편의 메서드 추가: workout.setUser(user)를 호출하면 user의 리스트에도 추가되게!
     public void confirmUser(User user) {
           // workout데이터를 다른 user에게 옮기는 기능을 추가 했을때 안전을 위해 사용

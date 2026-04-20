@@ -44,6 +44,9 @@ public class User extends BaseEntity {
     @ColumnDefault("2000")
     private Integer targetKcal;
 
+    @Column(nullable = false)
+    private Integer targetWorkoutDuration = 60;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<Workout> workouts = new ArrayList<>();
 
@@ -82,6 +85,11 @@ public class User extends BaseEntity {
         this.name = name;
         this.age = age;
         this.phoneNumber = phoneNumber;
+    }
+
+    public void updateTargetDuration(Integer newTarget) {
+        if (newTarget <= 0) throw new IllegalArgumentException("목표 시간은 0보다 커야합니다.");
+        this.targetWorkoutDuration = newTarget;
     }
 
     public void softDeletes() {
