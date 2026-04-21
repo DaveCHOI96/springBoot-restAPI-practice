@@ -4,6 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public record UserRequest(
+
+        @NotBlank(message = "이름은 필수 입력 값입니다.")
         String name,
 
         @Email(message = "올바르지않은 이메일 형식 입니다.")

@@ -3,6 +3,7 @@ package com.example.demo.workout;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ public class WorkoutService {
     private final WorkoutRepository workoutRepository;
     private final UserRepository userRepository;
 
+    @CacheEvict(value = "todaySummary", key = "#userId")
     public WorkoutResponse savaWorkout(Long userId, WorkoutRequest request) {
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));

@@ -1,5 +1,6 @@
 package com.example.demo.meal;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,12 +19,11 @@ import java.util.List;
 public class MealController {
 
     private final MealService mealService;
-    private final MealRepository mealRepository;
 
     // 단일 food insert
     @PostMapping("/users/{userId}/meal")
     public ResponseEntity<MealResponse> addMeal(
-            @PathVariable Long userId, @RequestBody MealRequest request) {
+            @PathVariable Long userId, @Valid @RequestBody MealRequest request) {
         //add는 DB데이터에만 저장하면되기 때문에 response를 사용하지않고 void(빈상자)를 사용
         MealResponse response = mealService.saveMeal(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

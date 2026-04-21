@@ -1,5 +1,6 @@
 package com.example.demo.user;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,7 +14,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserResponse> signUp(@RequestBody UserRequest request) {
+    public ResponseEntity<UserResponse> signUp(@Valid @RequestBody UserRequest request) {
         UserResponse response = userService.saveUser(request);
         // @RequestBody: "손님이 보낸 택배 박스(JSON)를 뜯어서 내용물을 꺼내라!
         return ResponseEntity.status(HttpStatus.CREATED).body(response);

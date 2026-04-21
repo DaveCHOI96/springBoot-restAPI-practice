@@ -13,7 +13,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WorkoutController {
 
-    private final WorkoutRepository workoutRepository;
     private final WorkoutService workoutService;
 
     @PostMapping("/users/{userId}/workouts")

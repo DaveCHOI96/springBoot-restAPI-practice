@@ -8,6 +8,7 @@ import com.example.demo.workout.WorkoutService;
 import com.example.demo.workout.WorkoutSummary;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +22,9 @@ public class SummaryService {
     private final WorkoutService workoutService;
     private final MealService mealService;
 
+    @Cacheable(value = "todaySummary", key = "#userId", cacheManager = "cacheManager")
     public TodaySummaryResponse getTodaySummary(Long userId) {
+        System.out.println("--- [BD 호출] 대시보드 데이터를 계산합니다 ---"); // 캐시되면 이 로그가 안 찍힘
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
 

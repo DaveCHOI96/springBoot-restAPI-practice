@@ -5,6 +5,7 @@ import com.example.demo.user.FollowRepository;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class MealService {
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
 
+    @CacheEvict(value = "todaySummary", key = "#userId") // 데이터가 추가됐으니 캐시를 삭제해!
     public MealResponse saveMeal(Long userId, MealRequest request) {
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
