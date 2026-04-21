@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -65,7 +66,7 @@ public class MealService {
 
     public Integer getTotalKcalToday(Long userId) {
         // 1. "오늘"의 시작 시간을 정의
-        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime start = LocalDate.now(ZoneId.of("Asia/Seoul")).atStartOfDay();
         // 2. "현재" 시간을 종료 시점으로 정의
         LocalDateTime end = LocalDateTime.now();
 
@@ -76,24 +77,23 @@ public class MealService {
                 .mapToInt(Meal::getCalories).sum();
     }
 
-    public DailyProgressResponse getDailyProgress(Long userId) {
+    public MealSummary getMealSummary(Long userId) {
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저를 찾을 수 없습니다."));
 
         // 오늘 먹은 총 칼로리 불러오기
-        Integer currentKcal = getTotalKcalToday(userId);
+        Integer totalKcalToday = getTotalKcalToday(userId);
 
-        // 목표 칼로리가 0 or null일 경우를 대비한 안전 로직
-        if (user.getTargetKcal() == null || user.getTargetKcal() == 0) {
-            return new DailyProgressResponse(user.getTargetKcal(), currentKcal, 0.0);
-        }
+        return MealSummary.of(user, totalKcalToday);
 
+
+        //계산 로직 MealSemmary로 숨김
         // 퍼센트 계산
         // (double)로 형변환을 해줘야 소수점 계산이 정확해요!
         // 계산 및 소수점 다듬기 (소수점 첫째 자리까지)
-        double rawPercentage = (double) currentKcal / user.getTargetKcal()*100;
-        double percentage = Math.round(rawPercentage * 10) / 10.0;
-        return new DailyProgressResponse(user.getTargetKcal(), currentKcal, percentage);
+//        double rawPercentage = (double) totalKcalToday / user.getTargetKcal()*100;
+//        double percentage = Math.round(rawPercentage * 10) / 10.0;
+//        return new MealSummary(user.getTargetKcal(), totalKcalToday, percentage);
     }
 
     public MealResponse updateMeal(Long userId, Long mealId, MealRequest request) {

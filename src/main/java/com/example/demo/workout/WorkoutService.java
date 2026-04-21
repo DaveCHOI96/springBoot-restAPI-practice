@@ -6,6 +6,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -62,5 +65,26 @@ public class WorkoutService {
         }
         workout.update(request.title(), request.duration());
         return WorkoutResponse.from(workout);
+    }
+
+    @Transactional(readOnly = true)
+    public WorkoutSummary getWorkoutSummary(Long userId) {
+        User user = userRepository.findActiveUserById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        //오늘 운동 시간 합산 (DB SUM 쿼리 방식 호출)
+        Integer totalDuration = getTodayTotalDuration(userId);
+
+        //DTO로 변환하여 리턴 (achievementRate 계산 로직은 record 내부의 of 메서드에 있음)
+        return WorkoutSummary.of(user, totalDuration);
+    }
+
+    @Transactional(readOnly = true)
+    public Integer getTodayTotalDuration(Long userId) {
+        LocalDateTime startOfDay = LocalDate.now(ZoneId.of("Asia/Seoul")).atStartOfDay();
+        Integer total = workoutRepository.calculateTotalDurationToday(userId, startOfDay);
+
+        // 기록이 없으면 null이 오므로 0을 반환
+        return total != null ? total : 0;
     }
 }

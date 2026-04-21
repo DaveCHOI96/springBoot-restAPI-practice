@@ -41,10 +41,13 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 50)
     private String phoneNumber;
 
-    @ColumnDefault("2000")
-    private Integer targetKcal;
+    //Builder를 entity class에 적용할때, 디폴트 값을 지정하는 컬럼은 Builder.Default사용
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer targetKcal = 2000;
 
     @Column(nullable = false)
+    @Builder.Default
     private Integer targetWorkoutDuration = 60;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
@@ -111,6 +114,13 @@ public class User extends BaseEntity {
         this.meals.forEach(Meal::restore);
         this.followers.forEach(Follow::restore);
         this.followings.forEach(Follow::restore);
+    }
+
+    // 디폴트 값 안전 메서드
+    @PrePersist
+    public void prePersist() {
+        if (this.targetKcal == null) this.targetKcal = 2000;
+        if (this.targetWorkoutDuration == null) this.targetWorkoutDuration = 60;
     }
 }
 

@@ -38,4 +38,5 @@ public class WorkoutController {
         WorkoutResponse response = workoutService.updateWorkout(userId, workoutId, request);
         return ResponseEntity.ok(response);
     }
+
 }
