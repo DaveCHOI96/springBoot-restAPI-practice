@@ -1,47 +1,38 @@
 package com.example.demo.config;
 
-import org.springframework.boot.autoconfigure.cache.RedisCacheManagerBuilderCustomizer;
-import org.springframework.cache.annotation.EnableCaching;
+import com.example.demo.cache.CachePolicy;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.data.redis.cache.RedisCacheConfiguration;
-import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.RedisSerializationContext;
-import org.springframework.data.redis.serializer.StringRedisSerializer;
-
-import java.time.Duration;
-import java.util.Random;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.core.StringRedisTemplate;
 
 @Configuration
 public class RedisConfig {
 
-    private final Random random = new Random();
-
-    // 기본 캐시 설정(전역 설정)
+    /**
+     * CacheService 전용 StringRedisTemplate
+     *
+     * CacheService가 직렬화/역직렬화를 ObjectMapper로 직접 수행하므로
+     * RedisTemplate은 단순 String 저장만 담당합니다.
+     * → GenericJackson2JsonRedisSerializer의 제네릭 타입 소거 문제 원천 차단
+     */
     @Bean
-    public RedisCacheConfiguration cacheConfiguration() {
-        return RedisCacheConfiguration.defaultCacheConfig()
-                //.plusSeconds(random.nextInt(61) Jitter방식 Cache Stampede 해결 전략 사용
-                .entryTtl(Duration.ofMinutes(10).plusSeconds(random.nextInt(61))) // 기본값은 10분으로 설정
-                .disableCachingNullValues()
-                .serializeKeysWith(RedisSerializationContext.SerializationPair.fromSerializer(new StringRedisSerializer()))
-                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer()));
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
+        return new StringRedisTemplate(connectionFactory);
     }
 
-    // 캐시 이름별로 설정을 커스터마이징 (실무에서 중요)
+    /**
+     * 공용 ObjectMapper
+     * - JavaTimeModule: LocalDate, LocalDateTime 직렬화 지원
+     * - WRITE_DATES_AS_TIMESTAMPS 비활성화: ISO-8601 문자열로 저장
+     */
     @Bean
-    public RedisCacheManagerBuilderCustomizer redisCacheManagerBuilderCustomizer() {
-        return (builder) -> builder
-                // 오늘 요약 정보는 데이터가 자주 바뀌므로 5분 유지
-                .withCacheConfiguration("todaySummary",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofMinutes(5).plusSeconds(random.nextInt(31)))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())))
-
-                // 유저 프로필 같은 정보는 자주 안 바뀌므로 24시간 유지
-                .withCacheConfiguration("userProfile",
-                        RedisCacheConfiguration.defaultCacheConfig()
-                                .entryTtl(Duration.ofHours(24).plusSeconds(random.nextInt(601)))
-                                .serializeValuesWith(RedisSerializationContext.SerializationPair.fromSerializer(new GenericJackson2JsonRedisSerializer())));
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }

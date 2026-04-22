@@ -1,42 +1,130 @@
 package com.example.demo.cache;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CacheService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
-    private static final double beta = 1.0; // 가중치 (커질수록 더 일찍 갱신)
-    private static final long gap = 10; // 예상 갱신 소요 시간(초)
+    private final StringRedisTemplate redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    //T를 쓰면 하나의 메서드로 모든 타입을 다 소화할 수 있다
-    //**T**는 자바의 **제네릭(Generic)**이라는 문법입니다. 쉽게 말하면 **"어떤 타입이
-    //들어올지 아직 모르니, 나중에 쓸 때 결정하겠다"**라는 뜻의 타입 파라미터
-    @SuppressWarnings("unchecked") // 경고 띄우지말란 어노테이션
-    public <T> T getWithPER(String key, Supplier<T> dbLoader, Duration ttl) {
-        // 1. 캐시 조회
-        CacheValue<T> cached = (CacheValue<T>) redisTemplate.opsForValue().get(key);
-        Long remainingTtl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+    private static final double BETA = 1.0;
 
-        // 2. PER 조건 확인 : 남은 시간이 확률적 계산값보다
-        if (cached == null || (remainingTtl - (gap * beta * Math.log(Math.random())) <= 0)) {
-           System.out.println("--- [PER] 확률적 조기 갱신 혹은 신규 생성 시작! ---");
+    // Random → SecureRandom: 예측 불가능한 난수 생성 (노란줄 원인)
+    private static final SecureRandom RANDOM = new SecureRandom();
 
-           // 3. DB에서 새 데이터 가져오기 (무거운 로직 실행)
-            T newValue = dbLoader.get();
+    /**
+     * PER(Probabilistic Early Recomputation) + Jitter 적용 캐시 조회
+     *
+     * @param policy    캐시 정책 (TTL, Jitter, PER gap 포함)
+     * @param subKey    캐시 키 구분자 (ex. userId)
+     * @param dbLoader  캐시 미스 시 실행할 DB 조회 로직
+     * @param valueType 역직렬화 대상 클래스
+     */
+    public <T> T getWithPER(CachePolicy policy, String subKey, Supplier<T> dbLoader, Class<T> valueType) {
+        JavaType javaType = objectMapper.getTypeFactory().constructType(valueType);
+        return getWithPER(policy, subKey, dbLoader, javaType);
+    }
 
-            // 4. Redis에 다시 저장
-            CacheValue<T> wrapValue = CacheValue.of(newValue);
-            redisTemplate.opsForValue().set(key, wrapValue, ttl);
-            return newValue;
+    /**
+     * List&lt;T&gt; 등 복잡한 제네릭 타입을 위한 overload
+     *
+     * <pre>{@code
+     * JavaType type = objectMapper.getTypeFactory()
+     *         .constructCollectionType(List.class, MyDto.class);
+     * cacheService.getWithPER(policy, key, loader, type);
+     * }</pre>
+     */
+    public <T> T getWithPER(CachePolicy policy, String subKey, Supplier<T> dbLoader, JavaType valueType) {
+        String key = policy.buildKey(subKey);
+
+        // 1. Redis 조회
+        String cachedJson = redisTemplate.opsForValue().get(key);
+        long remainingTtl = getRemainingTtl(key);
+
+        // 2. PER 확률 계산 (캐시가 존재할 때만)
+        boolean isProbabilisticExpired = cachedJson != null
+                && remainingTtl > 0
+                && shouldEarlyRecompute(policy, remainingTtl);
+
+        // 3. 캐시 히트
+        if (cachedJson != null && !isProbabilisticExpired) {
+            return deserialize(cachedJson, valueType, key);
         }
-        return cached.getValue();
+
+        // 4. 캐시 미스 또는 PER 조기 갱신
+        log.info("[Cache] DB 조회. key={}, reason={}", key,
+                cachedJson == null ? "MISS" : "PER_EARLY_RECOMPUTE");
+
+        T freshValue = dbLoader.get();
+        store(key, freshValue, policy);
+        return freshValue;
+    }
+
+    /**
+     * 캐시 수동 삭제 (데이터 변경 시 호출)
+     */
+    public void evict(CachePolicy policy, String subKey) {
+        String key = policy.buildKey(subKey);
+        boolean deleted = Boolean.TRUE.equals(redisTemplate.delete(key)); // unboxing NPE 방지 (노란줄 원인)
+        log.info("[Cache] Evict. key={}, deleted={}", key, deleted);
+    }
+
+    // ── private helpers ──────────────────────────────────────────────────────
+
+    /**
+     * PER 조기 갱신 여부 판단
+     * 공식: remainingTtl <= perGap * beta * -log(rand)
+     */
+    private boolean shouldEarlyRecompute(CachePolicy policy, long remainingTtl) {
+        double rand = Math.max(RANDOM.nextDouble(), 1e-10); // log(0) = -Infinity 방지
+        double earlyRecomputeWindow = policy.getPerGap() * BETA * -Math.log(rand);
+
+        if (remainingTtl <= earlyRecomputeWindow) {
+            // {:.2f}는 SLF4J 미지원 포맷 → String.format으로 변환 (노란줄 원인)
+            log.debug("[PER] 조기 갱신 트리거. remainingTtl={}s, window={}s",
+                    remainingTtl, String.format("%.2f", earlyRecomputeWindow));
+            return true;
+        }
+        return false;
+    }
+
+    private long getRemainingTtl(String key) {
+        Long ttl = redisTemplate.getExpire(key, TimeUnit.SECONDS);
+        return (ttl != null && ttl > 0) ? ttl : 0L;
+    }
+
+    private <T> void store(String key, T value, CachePolicy policy) {
+        try {
+            String json = objectMapper.writeValueAsString(value);
+            long jitter = RANDOM.nextInt(policy.getJitterRange() + 1);
+            Duration finalTtl = policy.getBaseTtl().plusSeconds(jitter);
+            redisTemplate.opsForValue().set(key, json, finalTtl);
+            log.debug("[Cache] 저장 완료. key={}, ttl={}s", key, finalTtl.getSeconds());
+        } catch (Exception e) {
+            log.error("[Cache] 직렬화 실패. key={}", key, e);
+        }
+    }
+
+    private <T> T deserialize(String json, JavaType valueType, String key) {
+        try {
+            return objectMapper.readValue(json, valueType);
+        } catch (Exception e) {
+            log.warn("[Cache] 역직렬화 실패, 캐시 삭제. key={}", key, e);
+            redisTemplate.delete(key);
+            return null;
+        }
     }
 }

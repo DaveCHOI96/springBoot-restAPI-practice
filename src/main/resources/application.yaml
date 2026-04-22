@@ -36,4 +36,5 @@ logging:
   level:
     org.hibernate.SQL: DEBUG
     org.springframework.cache: TRACE
+    com.example.demo.cache: DEBUG
 

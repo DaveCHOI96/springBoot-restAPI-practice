@@ -1,5 +1,6 @@
 package com.example.demo.cache;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import java.io.Serializable;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS) // 타입 정보 명시 저장
 public class CacheValue<T> implements Serializable {
     private T value; // 실제 저장할 데이터 (식단 정보 등)
     private long createdAt; // 생성 시간 (System.currentTimeMillis())

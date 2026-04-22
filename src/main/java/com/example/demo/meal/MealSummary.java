@@ -2,6 +2,7 @@ package com.example.demo.meal;
 
 import com.example.demo.user.User;
 
+
 public record MealSummary(
         Integer todayTotalCalories,
         Integer targetCalories,
