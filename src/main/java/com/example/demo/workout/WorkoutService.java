@@ -1,5 +1,6 @@
 package com.example.demo.workout;
 
+import com.example.demo.summary.SummaryService;
 import com.example.demo.user.User;
 import com.example.demo.user.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,10 @@ public class WorkoutService {
 
     private final WorkoutRepository workoutRepository;
     private final UserRepository userRepository;
+    private final SummaryService summaryService;
 
-    @CacheEvict(value = "todaySummary", key = "#userId")
-    public WorkoutResponse savaWorkout(Long userId, WorkoutRequest request) {
+    //    @CacheEvict(value = "todaySummary", key = "#userId") PER 알고리즘 방식엔 사용안함
+    public WorkoutResponse saveWorkout(Long userId, WorkoutRequest request) {
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
         // 객체 생성 조립 설명서 builder ~ build
@@ -39,10 +41,14 @@ public class WorkoutService {
 
         //void가 아닌 WorkoutResponse를 사용할 경우 return 반환이 필요하기에
         // workoutRepository.save(workout); DB에 workout 엔티티를 영구저장
-        Workout savadWorkout = workoutRepository.save(workout);
+        Workout savedWorkout = workoutRepository.save(workout);
+
+        // 운동 save되면 캐시 삭제
+        summaryService.evictTodaySummaryCache(userId);
+
         //DB용 복잡한 데이터(Entity)를 다시 화면용 깔끔한 데이터(Response)로
         //변환(from)해서 문지기(Controller)에게 전달합니다.
-        return WorkoutResponse.from(savadWorkout);
+        return WorkoutResponse.from(savedWorkout);
     }
 
     @Transactional(readOnly = true)

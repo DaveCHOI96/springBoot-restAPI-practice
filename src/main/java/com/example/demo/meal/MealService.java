@@ -1,5 +1,6 @@
 package com.example.demo.meal;
 
+import com.example.demo.summary.SummaryService;
 import com.example.demo.user.Follow;
 import com.example.demo.user.FollowRepository;
 import com.example.demo.user.User;
@@ -25,8 +26,9 @@ public class MealService {
     private final MealRepository mealRepository;
     private final UserRepository userRepository;
     private final FollowRepository followRepository;
+    private final SummaryService summaryService;
 
-    @CacheEvict(value = "todaySummary", key = "#userId") // 데이터가 추가됐으니 캐시를 삭제해!
+//    @CacheEvict(value = "todaySummary", key = "#userId") // 데이터가 추가됐으니 캐시를 삭제해!
     public MealResponse saveMeal(Long userId, MealRequest request) {
         User user = userRepository.findActiveUserById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
@@ -39,6 +41,8 @@ public class MealService {
         meal.confirmUser(user);
 
         Meal savedMeal = mealRepository.save(meal);
+
+        summaryService.evictTodaySummaryCache(userId);
         return MealResponse.from(savedMeal);
     }
 
